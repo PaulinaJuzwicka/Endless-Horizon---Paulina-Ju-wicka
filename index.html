@@ -3,22 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gra z statkiem kosmicznym</title>
+    <title>Space Runner</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script type="module" src="app.js" defer></script>
 </head>
 <body>
-    <div id="game-container">
-        <canvas id="game-canvas"></canvas>
+    <canvas id="renderCanvas"></canvas>
+    <div id="ui">
+        <button id="leftBtn">←</button>
+        <button id="rightBtn">→</button>
+        <div id="score">Wynik: 0</div>
     </div>
-
-    <div id="menu">
-        <button id="startButton">Start Game</button>
-        <button id="highScoresButton">High Scores</button>
-    </div>
-
-    <script type="module" src="./scripts/three.module.min.js"></script>
-    <script type="module" src="./scripts/OBJLoader.js"></script>
-    <script type="module" src="./scripts/MTLLoader.js"></script>
-    <script type="module" src="app.js"></script>
 </body>
 </html>

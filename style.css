@@ -1,38 +1,25 @@
 body, html {
     margin: 0;
     padding: 0;
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #000;
-}
-
-#game-container {
-    position: relative;
     width: 100%;
     height: 100%;
+    overflow: hidden;
+    background-color: black;
 }
 
-#menu {
+canvas {
+    display: block;
+}
+
+#ui {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    bottom: 20px;
+    width: 100%;
     text-align: center;
-    display: none;
 }
 
-#menu button {
-    padding: 15px;
-    font-size: 18px;
-    margin: 10px;
-}
-
-#score-container {
-    color: white;
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 24px;
+button {
+    padding: 10px;
+    font-size: 20px;
+    margin: 5px;
 }
