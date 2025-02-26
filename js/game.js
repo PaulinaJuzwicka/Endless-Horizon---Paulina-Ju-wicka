@@ -1,7 +1,6 @@
-// Ustawienia gry
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+import { ctx, canvas } from './ui.js';
 
+// Ustawienia gry
 let shipX = canvas.width / 2;
 let shipY = canvas.height / 2;
 let shipWidth = 50;
@@ -94,12 +93,14 @@ images.energyBarrier.src = 'assets/energy_barrier.png';
 
 // Funkcja do rysowania tła
 function drawBackground() {
-    ctx.drawImage(images.background, 0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#000"; // Kolor tła
+    ctx.fillRect(0, 0, canvas.width, canvas.height); // Rysowanie prostokąta jako tła
 }
 
 // Funkcja do rysowania statku kosmicznego
 function drawSpaceship(x, y) {
-    ctx.drawImage(images.spaceship, x, y, 50, 50); // 50x50 to przykładowy rozmiar statku
+    ctx.fillStyle = "#ff0"; // Kolor statku
+    ctx.fillRect(x - shipWidth / 2, y - shipHeight / 2, shipWidth, shipHeight); // Rysowanie prostokąta jako statku
 }
 
 // Funkcja do rysowania przeszkód
@@ -168,49 +169,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyAGoHBweFO52qkSCtB1Tk4FQtq4F0Pz_Cc",
-  authDomain: "endless-horizon-40af4.firebaseapp.com",
-  projectId: "endless-horizon-40af4",
-  storageBucket: "endless-horizon-40af4.appspot.com",
-  messagingSenderId: "834668038891",
-  appId: "1:834668038891:web:e55ff62bb27c63b9324cae",
-  measurementId: "G-D2C0ZNSES0"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-const startButton = document.getElementById('startButton');
-const highScoresButton = document.getElementById('highScoresButton');
-const menu = document.getElementById('menu');
-
-// Ustawienia gry
-let gameStarted = false;
-
 // Funkcja do rozpoczęcia gry
-startButton.addEventListener('click', () => {
-    menu.style.display = 'none'; // Ukryj menu
-    canvas.style.display = 'block'; // Pokaż canvas
-    gameStarted = true;
-    startGame(); // Funkcja rozpoczynająca grę
-});
-
-// Funkcja do pokazania wyników online
-highScoresButton.addEventListener('click', () => {
-    getHighScores(); // Pobieranie wyników z Firebase
-});
-
-// Funkcja rozpoczęcia gry
 function startGame() {
     // Kod do inicjalizacji gry, rysowania statku itp.
     // Zainicjuj wszystkie zmienne gry i uruchom pętlę gry
@@ -262,3 +221,5 @@ function gameOver() {
 }
 
 gameLoop();
+
+export { drawBackground, drawSpaceship };
