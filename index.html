@@ -3,25 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gra Kosmiczna</title>
+    <title>Endless Horizon</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="menu">
-        <h1>Gra Kosmiczna</h1>
+        <h1>Endless Horizon</h1>
         <button id="startButton">Start Gry</button>
         <button id="highScoresButton">Wyniki Online</button>
+        <div id="instructions">
+            <h3>Instrukcja:</h3>
+            <p>Sterowanie: Strzałki ← → lub klawisze A/D</p>
+            <p>Na urządzeniach mobilnych: Przechyl telefon lub dotknij ekranu</p>
+            <p>Unikaj przeszkód i staraj się przelecieć jak najdalej!</p>
+        </div>
     </div>
 
     <canvas id="gameCanvas" style="display: none;"></canvas>
     
-    <!-- Dodaj skrypty Firebase -->
-    <script type="module">
-        // Poinformuj użytkownika o stanie ładowania
-        console.log("Ładowanie skryptów...");
-    </script>
-    <script type="module" src="js/firebase.js"></script>
+    <!-- Dodaj skrypty w odpowiedniej kolejności -->
+    <script type="module" src="js/game/settings.js"></script>
+    <script type="module" src="js/game/collision.js"></script>
+    <script type="module" src="js/game/terrain/terrain.js"></script>
     <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/controls.js"></script>
+    <script type="module" src="js/firebase.js"></script>
     <script type="module" src="js/game.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>

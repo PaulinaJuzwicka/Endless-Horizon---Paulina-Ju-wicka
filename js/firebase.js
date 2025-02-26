@@ -1,6 +1,5 @@
-// Poprawiony plik firebase.js
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.x.x/firebase-app.js';
+import { getDatabase, ref, push, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/9.x.x/firebase-database.js';
 
 const firebaseConfig = {
     apiKey: "AIzaSyAGoHBweFO52qkSCtB1Tk4FQtq4F0Pz_Cc",
@@ -11,47 +10,42 @@ const firebaseConfig = {
     appId: "1:834668038891:web:e55ff62bb27c63b9324cae",
     measurementId: "G-D2C0ZNSES0"
 };
-  
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
 
-// Funkcja do zapisywania wyniku
-async function saveHighScore(name, score) {
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
+
+export async function saveHighScore(playerName, score) {
     try {
-        const docRef = await addDoc(collection(db, "highScores"), {
-            name: name,
-            score: score
+        const scoresRef = ref(database, 'highScores');
+        await push(scoresRef, {
+            name: playerName,
+            score: score,
+            timestamp: Date.now()
         });
-        console.log("Document written with ID: ", docRef.id);
-        return docRef.id;
-    } catch (e) {
-        console.error("Error adding document: ", e);
-        return null;
+        return true;
+    } catch (error) {
+        console.error('Błąd podczas zapisywania wyniku:', error);
+        return false;
     }
 }
 
-// Funkcja do pobierania wyników
-async function getHighScores() {
+export async function getHighScores() {
     try {
-        const highScoresQuery = query(
-            collection(db, "highScores"),
-            orderBy("score", "desc"),
-            limit(5)
-        );
+        const scoresRef = ref(database, 'highScores');
+        const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(10));
+        const snapshot = await get(topScoresQuery);
         
-        const querySnapshot = await getDocs(highScoresQuery);
         const scores = [];
-        
-        querySnapshot.forEach((doc) => {
-            scores.push({ id: doc.id, ...doc.data() });
+        snapshot.forEach((childSnapshot) => {
+            scores.push({
+                id: childSnapshot.key,
+                ...childSnapshot.val()
+            });
         });
         
-        return scores;
-    } catch (e) {
-        console.error("Error getting high scores: ", e);
+        return scores.sort((a, b) => b.score - a.score);
+    } catch (error) {
+        console.error('Błąd podczas pobierania wyników:', error);
         return [];
     }
 }
-
-export { db, saveHighScore, getHighScores };

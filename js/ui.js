@@ -3,14 +3,14 @@ import { db } from './firebase.js';
 import { getFirestore, collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-firestore.js";
 
 // Wybór elementów DOM
-const startButton = document.getElementById('startButton');
-const highScoresButton = document.getElementById('highScoresButton');
+export const canvas = document.getElementById('gameCanvas');
+export const ctx = canvas.getContext('2d');
+export const startButton = document.getElementById('startButton');
+export const highScoresButton = document.getElementById('highScoresButton');
 const menu = document.getElementById('menu');
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
 
 // Funkcja do pobierania wyników
-async function getHighScores() {
+export async function getHighScores() {
     try {
         const highScoresQuery = query(
             collection(db, "highScores"),
@@ -86,6 +86,29 @@ function displayHighScores(scores) {
     document.getElementById('backButton').addEventListener('click', () => {
         document.body.removeChild(scoresList);
     });
+}
+
+export function setupUI() {
+    const menu = document.getElementById('menu');
+    const startButton = document.getElementById('startButton');
+    const highScoresButton = document.getElementById('highScoresButton');
+    
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    return { menu, startButton, highScoresButton };
+}
+
+export function drawUI(score, distance) {
+    ctx.fillStyle = 'white';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Wynik: ${Math.floor(score)}`, 10, 30);
+    ctx.fillText(`Dystans: ${Math.floor(distance)}m`, 10, 60);
 }
 
 export { startButton, highScoresButton, canvas, ctx, getHighScores };
