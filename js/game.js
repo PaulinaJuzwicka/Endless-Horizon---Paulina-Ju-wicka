@@ -1,49 +1,108 @@
+// Ulepszony plik game.js
 import { ctx, canvas } from './ui.js';
+import { saveHighScore } from './firebase.js';
 
 // Ustawienia gry
-let shipX = canvas.width / 2;
-let shipY = canvas.height / 2;
+let shipX = window.innerWidth / 2;
+const shipY = window.innerHeight * 0.8; // Stała wysokość statku (zawsze na dole)
 let shipWidth = 50;
 let shipHeight = 30;
-let speed = 5;
+let baseSpeed = 5; // Prędkość bazowa
+let gameSpeed = baseSpeed; // Aktualna prędkość gry
+let speedIncreaseFactor = 1.0005; // Współczynnik przyspieszenia (z każdą klatką)
 let distance = 0;
+let gameActive = false;
+let lastTime = 0;
+let deltaTime = 0;
+let targetX = shipX; // Cel dla płynnego ruchu
 
 // Ustawienia żyroskopu
-let beta = 0;
-let gamma = 0;
+let gyroActive = false;
+let gyroSensitivity = 2; // Czułość żyroskopu
 
-let obstacles = []; // Tablica przeszkód
-let terrains = ['desert', 'mountains', 'ruins']; // Typy terenów
-let currentTerrain = 0; // Początkowy teren
+// Tablica przeszkód
+let obstacles = [];
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// Funkcja do dostosowania rozmiaru canvas
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    shipX = canvas.width / 2;
+}
+
+// Wywołujemy funkcję dostosowania przy starcie
+window.addEventListener('load', () => {
+    resizeCanvas();
+});
+
+// Nasłuchiwanie na zmianę rozmiaru okna
+window.addEventListener('resize', resizeCanvas);
 
 // Ustawienie żyroskopu
 if (window.DeviceOrientationEvent) {
     window.addEventListener("deviceorientation", function(event) {
-        beta = event.beta;
-        gamma = event.gamma;
-
-        shipX = (gamma / 90) * canvas.width / 2 + canvas.width / 2;
+        if (event.gamma !== null && event.gamma !== undefined) {
+            gyroActive = true;
+            // Konwertuj gamma (przechylenie na boki) na pozycję statku
+            targetX = (canvas.width / 2) + (event.gamma * gyroSensitivity);
+        }
     });
-} else {
-    console.log("DeviceOrientationEvent nie jest wspierane.");
-}
+} 
 
-// Dodajemy dźwięki
-const crashSound = new Audio('crash.mp3');
-const engineSound = new Audio('engine.mp3');
+// Obsługa sterowania klawiaturą - płynny ruch
+let keysPressed = {
+    left: false,
+    right: false
+};
 
-// Funkcja do odtwarzania dźwięku
-function playEngineSound() {
-    if (engineSound.paused) {
-        engineSound.play();
+window.addEventListener('keydown', function(e) {
+    switch(e.key) {
+        case 'ArrowLeft':
+        case 'a':
+            keysPressed.left = true;
+            break;
+        case 'ArrowRight':
+        case 'd':
+            keysPressed.right = true;
+            break;
     }
-}
+});
 
-function playCrashSound() {
-    crashSound.play();
+window.addEventListener('keyup', function(e) {
+    switch(e.key) {
+        case 'ArrowLeft':
+        case 'a':
+            keysPressed.left = false;
+            break;
+        case 'ArrowRight':
+        case 'd':
+            keysPressed.right = false;
+            break;
+    }
+});
+
+// Obsługa dotykowego sterowania dla urządzeń mobilnych
+canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    targetX = touch.clientX;
+}, { passive: false });
+
+// Aktualizacja pozycji statku
+function updateShipPosition() {
+    // Aktualizacja targetX na podstawie klawiszy (jeśli żyroskop nie jest aktywny)
+    if (!gyroActive) {
+        const moveSpeed = 8; // Prędkość ruchu statku
+        if (keysPressed.left) targetX -= moveSpeed * deltaTime;
+        if (keysPressed.right) targetX += moveSpeed * deltaTime;
+    }
+    
+    // Ograniczenie targetX do granic ekranu
+    targetX = Math.max(shipWidth/2, Math.min(canvas.width - shipWidth/2, targetX));
+    
+    // Płynny ruch w kierunku celu
+    const easing = 0.1;
+    shipX += (targetX - shipX) * easing;
 }
 
 // Funkcja do detekcji kolizji
@@ -56,170 +115,236 @@ function checkCollision() {
             shipY + shipHeight / 2 > obstacle.y &&
             shipY - shipHeight / 2 < obstacle.y + obstacle.height
         ) {
-            playCrashSound();
             return true;
         }
     }
     return false;
 }
 
-// Funkcja do rysowania statku
-function drawShip() {
-    ctx.fillStyle = "#ff0";
-    ctx.fillRect(shipX - shipWidth / 2, shipY - shipHeight / 2, shipWidth, shipHeight);
+// Funkcja do generowania przeszkód
+function generateObstacle() {
+    // Różne wielkości przeszkód
+    const minSize = 30;
+    const maxSize = 80;
+    const width = minSize + Math.random() * (maxSize - minSize);
+    const height = minSize + Math.random() * (maxSize - minSize);
+    
+    // Pozycja przeszkody
+    const x = Math.random() * (canvas.width - width);
+    const y = -height; // Startuje nad ekranem
+    
+    // Losowa prędkość w zakresie od 80% do 120% aktualnej prędkości gry
+    const obstacleSpeed = gameSpeed * (0.8 + Math.random() * 0.4);
+    
+    obstacles.push({ 
+        x, 
+        y, 
+        width, 
+        height, 
+        speed: obstacleSpeed,
+        color: `rgb(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 100)})` 
+    });
 }
 
-// Załadowanie obrazów
-const images = {
-    background: new Image(),
-    spaceship: new Image(),
-    ruins: new Image(),
-    spaceshipWreck: new Image(),
-    rocks: new Image(),
-    canyon: new Image(),
-    tower: new Image(),
-    energyBarrier: new Image()
-};
+// Funkcja do aktualizacji przeszkód
+function updateObstacles() {
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].y += obstacles[i].speed * deltaTime;
+        
+        // Usuwamy przeszkody, które wyszły poza ekran
+        if (obstacles[i].y > canvas.height) {
+            obstacles.splice(i, 1);
+        }
+    }
+    
+    // Zwiększenie trudności - częstość generowania przeszkód wzrasta z czasem
+    const obstacleChance = 0.02 * (1 + distance / 1000);
+    if (Math.random() < obstacleChance * deltaTime * 60) { // Dostosowane do deltaTime
+        generateObstacle();
+    }
+}
 
-// Ustawianie źródeł obrazów
-images.background.src = 'assets/desert.jpg';
-images.spaceship.src = 'assets/spaceship.png';
-images.ruins.src = 'assets/ruins.png';
-images.spaceshipWreck.src = 'assets/spaceship_wreck.png';
-images.rocks.src = 'assets/rocks.png';
-images.canyon.src = 'assets/canyon.png';
-images.tower.src = 'assets/tower.png';
-images.energyBarrier.src = 'assets/energy_barrier.png';
+// Funkcja do rysowania statku
+function drawShip() {
+    // Korpus statku
+    ctx.fillStyle = "#4080ff";
+    ctx.beginPath();
+    ctx.moveTo(shipX, shipY - shipHeight / 2);
+    ctx.lineTo(shipX - shipWidth / 2, shipY + shipHeight / 2);
+    ctx.lineTo(shipX + shipWidth / 2, shipY + shipHeight / 2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Silnik - efekt płomienia
+    ctx.fillStyle = "#ff5500";
+    ctx.beginPath();
+    ctx.moveTo(shipX - shipWidth / 4, shipY + shipHeight / 2);
+    ctx.lineTo(shipX, shipY + shipHeight / 2 + 10 + Math.random() * 5);
+    ctx.lineTo(shipX + shipWidth / 4, shipY + shipHeight / 2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Kabina
+    ctx.fillStyle = "#80ff80";
+    ctx.beginPath();
+    ctx.arc(shipX, shipY - shipHeight / 4, shipWidth / 8, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+// Funkcja do rysowania przeszkód
+function drawObstacles() {
+    for (let i = 0; i < obstacles.length; i++) {
+        let obstacle = obstacles[i];
+        ctx.fillStyle = obstacle.color || "#ff3333";
+        
+        // Rysujemy meteoryt (przeszkodę)
+        ctx.beginPath();
+        ctx.ellipse(
+            obstacle.x + obstacle.width / 2,
+            obstacle.y + obstacle.height / 2,
+            obstacle.width / 2,
+            obstacle.height / 2,
+            0, 0, Math.PI * 2
+        );
+        ctx.fill();
+        
+        // Dodajemy szczegóły do meteorytu
+        ctx.fillStyle = "rgba(100, 100, 100, 0.5)";
+        ctx.beginPath();
+        ctx.arc(
+            obstacle.x + obstacle.width * 0.3,
+            obstacle.y + obstacle.height * 0.3,
+            obstacle.width * 0.15,
+            0, Math.PI * 2
+        );
+        ctx.fill();
+    }
+}
 
 // Funkcja do rysowania tła
 function drawBackground() {
-    ctx.fillStyle = "#000"; // Kolor tła
-    ctx.fillRect(0, 0, canvas.width, canvas.height); // Rysowanie prostokąta jako tła
+    // Gradienterowane tło kosmosu
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#000033");
+    gradient.addColorStop(1, "#000000");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Gwiazdy w tle
+    ctx.fillStyle = "#ffffff";
+    for (let i = 0; i < 100; i++) {
+        const x = Math.random() * canvas.width;
+        const y = (Math.random() * canvas.height) % canvas.height;
+        const size = Math.random() * 2 + 1;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
 }
 
-// Funkcja do rysowania statku kosmicznego
+// Funkcja do rysowania interfejsu
+function drawUI() {
+    // Dystans
+    ctx.font = "20px Arial";
+    ctx.fillStyle = "white";
+    ctx.fillText(`Dystans: ${distance.toFixed(0)} km`, 20, 30);
+    
+    // Prędkość
+    ctx.fillText(`Prędkość: ${gameSpeed.toFixed(1)}`, 20, 60);
+}
+
+// Funkcja do rysowania statku kosmicznego (stara, używamy teraz drawShip)
 function drawSpaceship(x, y) {
     ctx.fillStyle = "#ff0"; // Kolor statku
     ctx.fillRect(x - shipWidth / 2, y - shipHeight / 2, shipWidth, shipHeight); // Rysowanie prostokąta jako statku
 }
 
-// Funkcja do rysowania przeszkód
-function drawObstacle(obstacle, x, y) {
-    switch (obstacle.type) {
-        case 'ruins':
-            ctx.drawImage(images.ruins, x, y, 50, 50);
-            break;
-        case 'spaceshipWreck':
-            ctx.drawImage(images.spaceshipWreck, x, y, 50, 50);
-            break;
-        case 'rocks':
-            ctx.drawImage(images.rocks, x, y, 50, 50);
-            break;
-        case 'canyon':
-            ctx.drawImage(images.canyon, x, y, 50, 50);
-            break;
-        case 'tower':
-            ctx.drawImage(images.tower, x, y, 50, 50);
-            break;
-        case 'energyBarrier':
-            ctx.drawImage(images.energyBarrier, x, y, 50, 50);
-            break;
+// Główna pętla gry - z obsługą czasu
+function gameLoop(currentTime) {
+    if (!gameActive) return;
+    
+    // Obliczanie deltaTime (sekund od ostatniej klatki)
+    if (lastTime === 0) {
+        lastTime = currentTime;
     }
-}
-
-// Funkcja do rysowania dystansu
-function drawDistance() {
-    ctx.font = "24px Arial";
-    ctx.fillStyle = "white";
-    ctx.fillText("Distance: " + distance.toFixed(2), 10, 40);
-}
-
-// Funkcja do przełączania terenów
-function changeTerrain() {
-    if (distance > 1000 && currentTerrain === 0) {
-        currentTerrain = 1; // Zmieniamy teren na góry
-    } else if (distance > 2000 && currentTerrain === 1) {
-        currentTerrain = 2; // Zmieniamy teren na ruiny
-    }
-}
-
-// Modyfikujemy funkcję gameLoop, aby uwzględniała kolizje
-function gameLoop() {
+    deltaTime = (currentTime - lastTime) / 1000; // Konwersja na sekundy
+    lastTime = currentTime;
+    
+    // Ograniczenie deltaTime dla przypadków gdy karta jest nieaktywna
+    if (deltaTime > 0.1) deltaTime = 0.1;
+    
+    // Czyszczenie ekranu
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Rysowanie elementów gry
     drawBackground();
-    drawSpaceship(shipX, shipY);
+    updateShipPosition();
+    drawShip();
+    updateObstacles();
     drawObstacles();
-    drawDistance();
-
+    drawUI();
+    
+    // Zwiększamy trudność z czasem
+    gameSpeed *= speedIncreaseFactor;
+    
+    // Zwiększamy dystans proporcjonalnie do prędkości
+    distance += gameSpeed * deltaTime;
+    
     // Sprawdzamy kolizje
     if (checkCollision()) {
-        alert("Game Over! Your Distance: " + distance.toFixed(2));
-        return; // Zakończenie gry
+        gameOver();
+        return;
     }
-
-    // Zwiększ dystans
-    distance += speed * 0.01;
-
-    // Co 2 sekundy generujemy nową przeszkodę
-    if (Math.random() < 0.02) {
-        generateObstacle();
-    }
-
-    changeTerrain();
-
+    
+    // Kontynuujemy pętlę gry
     requestAnimationFrame(gameLoop);
 }
 
 // Funkcja do rozpoczęcia gry
 function startGame() {
-    // Kod do inicjalizacji gry, rysowania statku itp.
-    // Zainicjuj wszystkie zmienne gry i uruchom pętlę gry
-    gameLoop(); // Rozpocznij pętlę gry
-}
-
-// Funkcja do pobierania wyników z Firebase
-function getHighScores() {
-    const scoresRef = database.ref('highScores');
-    scoresRef.orderByChild('score').limitToLast(5).on('value', (snapshot) => {
-        let highScores = snapshot.val();
-        displayHighScores(highScores);
-    });
-}
-
-// Funkcja do wyświetlania wyników
-function displayHighScores(scores) {
-    const scoresList = document.createElement('div');
-    scoresList.style.position = 'absolute';
-    scoresList.style.top = '50%';
-    scoresList.style.left = '50%';
-    scoresList.style.transform = 'translate(-50%, -50%)';
-    scoresList.style.color = '#fff';
+    // Resetowanie zmiennych gry
+    obstacles = [];
+    distance = 0;
+    shipX = canvas.width / 2;
+    targetX = shipX;
+    gameSpeed = baseSpeed;
+    lastTime = 0;
+    gameActive = true;
     
-    let content = '<h2>Wyniki Online</h2>';
-    for (let key in scores) {
-        content += `<p>${scores[key].name}: ${scores[key].score}</p>`;
-    }
-
-    scoresList.innerHTML = content;
-    document.body.appendChild(scoresList);
+    // Uruchom pętlę gry
+    requestAnimationFrame(gameLoop);
 }
 
-// Funkcja do zapisywania wyników w Firebase
-function saveHighScore(name, score) {
-    const scoresRef = database.ref('highScores');
-    scoresRef.push({
-        name: name,
-        score: score
-    });
+// Funkcja gameOver
+async function gameOver() {
+    gameActive = false;
+    const finalScore = distance.toFixed(0);
+    
+    // Rysujemy ostatnią scenę z "Game Over"
+    ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.fillStyle = "#ff0000";
+    ctx.font = "48px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2 - 50);
+    
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "30px Arial";
+    ctx.fillText(`Dystans: ${finalScore} km`, canvas.width/2, canvas.height/2 + 10);
+    
+    // Opóźnij pokazanie komunikatu, aby gracz zobaczył ostatnią scenę
+    setTimeout(async () => {
+        const playerName = prompt('Podaj swoje imię:', 'Pilot');
+        if (playerName) {
+            await saveHighScore(playerName, parseFloat(finalScore));
+        }
+        
+        // Pokaż menu główne
+        document.getElementById('menu').style.display = 'block';
+        canvas.style.display = 'none';
+    }, 2000);
 }
 
-// Przykład zakończenia gry i zapisania wyniku
-function gameOver() {
-    const playerName = prompt('Podaj swoje imię:');
-    const score = distance.toFixed(2); // Zmienna z wynikiem (przykład)
-
-    saveHighScore(playerName, score);
-}
-
-gameLoop();
-
-export { drawBackground, drawSpaceship };
+// Eksport funkcji
+export { drawBackground, drawSpaceship, startGame };
