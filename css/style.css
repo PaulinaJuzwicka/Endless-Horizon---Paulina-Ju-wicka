@@ -16,7 +16,7 @@ body {
     background-color: rgba(0, 0, 0, 0.8);
     border-radius: 10px;
     position: relative;
-    z-index: 2;
+    z-index: 1000;
     max-width: 80%;
     margin: 20px auto;
 }
@@ -34,6 +34,9 @@ button {
     cursor: pointer;
     border-radius: 5px;
     transition: background-color 0.3s;
+    pointer-events: auto;
+    position: relative;
+    z-index: 1001;
 }
 
 button:hover {
@@ -58,6 +61,7 @@ button:hover {
     padding: 20px;
     border-radius: 10px;
     text-align: center;
+    z-index: 2000;
 }
 
 #instructions {

@@ -21,14 +21,12 @@
 
     <canvas id="gameCanvas" style="display: none;"></canvas>
     
-    <!-- Dodaj skrypty w odpowiedniej kolejności -->
-    <script type="module" src="js/game/settings.js"></script>
-    <script type="module" src="js/game/collision.js"></script>
-    <script type="module" src="js/game/terrain/terrain.js"></script>
-    <script type="module" src="js/ui.js"></script>
-    <script type="module" src="js/controls.js"></script>
-    <script type="module" src="js/firebase.js"></script>
-    <script type="module" src="js/game.js"></script>
+    <!-- Tylko główny plik aplikacji -->
     <script type="module" src="js/app.js"></script>
+    <script>
+        // Debug code - remove after fixing
+        document.getElementById('startButton').onclick = () => console.log('Start button clicked directly');
+        document.getElementById('highScoresButton').onclick = () => console.log('High scores button clicked directly');
+    </script>
 </body>
 </html>

@@ -1,100 +1,63 @@
-import { drawBackground, drawSpaceship, startGame as gameStart } from './game.js';
-import { startButton, highScoresButton, canvas, getHighScores, setupUI } from './ui.js';
-import { initializeFirebase } from './firebase.js';
+import { initGame, startGame } from './game.js';
+import { setupUI, setupCanvas } from './ui.js';
+import { initializeFirebase, getHighScores } from './firebase.js';
+import { GAME_SETTINGS } from './game/settings.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing game...');
+    
+    // Get DOM elements
     const menu = document.getElementById('menu');
     const canvas = document.getElementById('gameCanvas');
     const startButton = document.getElementById('startButton');
     const highScoresButton = document.getElementById('highScoresButton');
 
-    // Upewnij się, że elementy zostały znalezione
-    console.log('Menu:', menu);
-    console.log('Canvas:', canvas);
-    console.log('Start Button:', startButton);
-    console.log('High Scores Button:', highScoresButton);
+    // Debug log to check if elements are found
+    console.log('Elements found:', {
+        menu: menu !== null,
+        canvas: canvas !== null,
+        startButton: startButton !== null,
+        highScoresButton: highScoresButton !== null
+    });
 
-    // Funkcja do rozpoczęcia gry
-    function startGame() {
-        console.log('Game started');
-        menu.style.display = 'none';
-        canvas.style.display = 'block';
-        
-        // Dostosuj canvas do pełnego ekranu
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        
-        // Rozpocznij grę
-        gameStart();
-    }
-    
-    // Dodaj instrukcje gry po załadowaniu strony
-    const instructionsDiv = document.createElement('div');
-    instructionsDiv.style.marginTop = '20px';
-    instructionsDiv.style.padding = '10px';
-    instructionsDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-    instructionsDiv.style.borderRadius = '5px';
-    
-    instructionsDiv.innerHTML = `
-        <h3>Instrukcja:</h3>
-        <p>Sterowanie: Strzałki ← → lub klawisze A/D</p>
-        <p>Na urządzeniach mobilnych: Przechyl telefon lub dotknij ekranu</p>
-        <p>Unikaj przeszkód i staraj się przelecieć jak najdalej!</p>
-    `;
-    
-    menu.appendChild(instructionsDiv);
+    // Initialize game components
+    setupCanvas(canvas);
+    setupUI();
+    initializeFirebase();
+    initGame(canvas);
 
-    // Obsługa przycisku Start
+    // Add button listeners
     startButton.addEventListener('click', () => {
         console.log('Start button clicked');
         menu.style.display = 'none';
         canvas.style.display = 'block';
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
         startGame();
     });
-    
-    // Obsługa przycisku Wyników
+
     highScoresButton.addEventListener('click', async () => {
         console.log('High scores button clicked');
         try {
             const scores = await getHighScores();
-            displayHighScores(scores);
+            showHighScores(scores);
         } catch (error) {
-            console.error('Błąd podczas pobierania wyników:', error);
-            alert('Nie udało się pobrać wyników. Spróbuj ponownie później.');
+            console.error('Error loading scores:', error);
+            alert('Nie udało się załadować wyników.');
         }
     });
 
-    function displayHighScores(scores) {
-        // Usuń poprzedni panel wyników, jeśli istnieje
-        const existingScores = document.querySelector('.high-scores');
-        if (existingScores) {
-            existingScores.remove();
-        }
-
-        const scoresHTML = scores.length > 0
-            ? scores.map((score, index) => 
-                `<p>${index + 1}. ${score.name}: ${score.score} punktów</p>`
-              ).join('')
-            : '<p>Brak wyników</p>';
-
-        const scoreDisplay = document.createElement('div');
-        scoreDisplay.className = 'high-scores';
-        scoreDisplay.innerHTML = `
+    function showHighScores(scores) {
+        const scoresDiv = document.createElement('div');
+        scoresDiv.className = 'high-scores';
+        scoresDiv.innerHTML = `
             <h2>Najlepsze Wyniki</h2>
-            ${scoresHTML}
-            <button id="closeScores">Zamknij</button>
+            ${scores.map((score, index) => `
+                <p>${index + 1}. ${score.score} punktów</p>
+            `).join('')}
+            <button onclick="this.parentElement.remove()">Zamknij</button>
         `;
-
-        document.body.appendChild(scoreDisplay);
-
-        // Obsługa przycisku zamykania
-        document.getElementById('closeScores').addEventListener('click', () => {
-            scoreDisplay.remove();
-        });
+        document.body.appendChild(scoresDiv);
     }
 
-    setupUI();
-    initializeFirebase();
+    // Log debug info
+    console.log('Game initialized with settings:', GAME_SETTINGS);
 });
