@@ -2,31 +2,23 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Endless Horizon</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gra Kosmiczna</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div id="menu">
-        <h1>Endless Horizon</h1>
+        <h1>Gra Kosmiczna</h1>
         <button id="startButton">Start Gry</button>
         <button id="highScoresButton">Wyniki Online</button>
-        <div id="instructions">
-            <h3>Instrukcja:</h3>
-            <p>Sterowanie: Strzałki ← → lub klawisze A/D</p>
-            <p>Na urządzeniach mobilnych: Przechyl telefon lub dotknij ekranu</p>
-            <p>Unikaj przeszkód i staraj się przelecieć jak najdalej!</p>
-        </div>
     </div>
 
     <canvas id="gameCanvas" style="display: none;"></canvas>
     
-    <!-- Tylko główny plik aplikacji -->
+    <script type="module" src="js/supabase-config.js"></script>
+    <script type="module" src="js/supabase.js"></script>
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/game.js"></script>
     <script type="module" src="js/app.js"></script>
-    <script>
-        // Debug code - remove after fixing
-        document.getElementById('startButton').onclick = () => console.log('Start button clicked directly');
-        document.getElementById('highScoresButton').onclick = () => console.log('High scores button clicked directly');
-    </script>
 </body>
 </html>

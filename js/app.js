@@ -1,63 +1,42 @@
-import { initGame, startGame } from './game.js';
-import { setupUI, setupCanvas } from './ui.js';
-import { initializeFirebase, getHighScores } from './firebase.js';
-import { GAME_SETTINGS } from './game/settings.js';
+import { drawBackground, drawSpaceship, startGame as gameStart } from './game.js';
+import { startButton, highScoresButton, canvas, getHighScores } from './ui.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing game...');
-    
-    // Get DOM elements
     const menu = document.getElementById('menu');
-    const canvas = document.getElementById('gameCanvas');
-    const startButton = document.getElementById('startButton');
-    const highScoresButton = document.getElementById('highScoresButton');
-
-    // Debug log to check if elements are found
-    console.log('Elements found:', {
-        menu: menu !== null,
-        canvas: canvas !== null,
-        startButton: startButton !== null,
-        highScoresButton: highScoresButton !== null
-    });
-
-    // Initialize game components
-    setupCanvas(canvas);
-    setupUI();
-    initializeFirebase();
-    initGame(canvas);
-
-    // Add button listeners
-    startButton.addEventListener('click', () => {
-        console.log('Start button clicked');
+    
+    // Funkcja do rozpoczęcia gry
+    function startGame() {
+        console.log('Game started');
         menu.style.display = 'none';
         canvas.style.display = 'block';
-        startGame();
-    });
-
-    highScoresButton.addEventListener('click', async () => {
-        console.log('High scores button clicked');
-        try {
-            const scores = await getHighScores();
-            showHighScores(scores);
-        } catch (error) {
-            console.error('Error loading scores:', error);
-            alert('Nie udało się załadować wyników.');
-        }
-    });
-
-    function showHighScores(scores) {
-        const scoresDiv = document.createElement('div');
-        scoresDiv.className = 'high-scores';
-        scoresDiv.innerHTML = `
-            <h2>Najlepsze Wyniki</h2>
-            ${scores.map((score, index) => `
-                <p>${index + 1}. ${score.score} punktów</p>
-            `).join('')}
-            <button onclick="this.parentElement.remove()">Zamknij</button>
-        `;
-        document.body.appendChild(scoresDiv);
+        
+        // Dostosuj canvas do pełnego ekranu
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        
+        // Rozpocznij grę
+        gameStart();
     }
+    
+    // Dodaj instrukcje gry po załadowaniu strony
+    const instructionsDiv = document.createElement('div');
+    instructionsDiv.style.marginTop = '20px';
+    instructionsDiv.style.padding = '10px';
+    instructionsDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+    instructionsDiv.style.borderRadius = '5px';
+    
+    instructionsDiv.innerHTML = `
+        <h3>Instrukcja:</h3>
+        <p>Sterowanie: Strzałki ← → lub klawisze A/D</p>
+        <p>Na urządzeniach mobilnych: Przechyl telefon lub dotknij ekranu</p>
+        <p>Unikaj przeszkód i staraj się przelecieć jak najdalej!</p>
+    `;
+    
+    menu.appendChild(instructionsDiv);
 
-    // Log debug info
-    console.log('Game initialized with settings:', GAME_SETTINGS);
+    // Dodaj event listener do przycisku start
+    startButton.addEventListener('click', startGame);
+    
+    // Dodaj event listener do przycisku wyników
+    highScoresButton.addEventListener('click', getHighScores);
 });
