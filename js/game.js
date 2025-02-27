@@ -92,45 +92,177 @@ backgrounds.mountains.src = 'assets/gory.png';
 backgrounds.city.src = 'assets/miasto.png';
 backgrounds.ruins.src = 'assets/ruiny_miasta.png';
 
-// Zmodyfikuj funkcję resizeCanvas
+// Update base sizes
+const BASE_SHIP_WIDTH = 60;
+const BASE_SHIP_HEIGHT = 36;
+const MIN_SCALE = 0.5; // Minimum scaling factor
+
+// Add these constants at the top of the file
+const MOBILE_BREAKPOINT = 768;
+const BASE_SIZES = {
+    desktop: {
+        shipWidth: 60,
+        shipHeight: 36,
+        baseSpeed: 200,
+        moveSpeed: 500
+    },
+    mobile: {
+        shipWidth: 40,
+        shipHeight: 24,
+        baseSpeed: 150,
+        moveSpeed: 400
+    }
+};
+
+// Device-specific settings
+const DEVICE_SETTINGS = {
+    desktop: {
+        shipWidth: 80,          // Większy statek
+        shipHeight: 48,         // Zachowana proporcja
+        baseSpeed: 300,         // Szybsza bazowa prędkość
+        shipMoveSpeed: 600,     // Szybsze poruszanie statkiem
+        obstacleMinSize: 100,   // Większe przeszkody
+        obstacleMaxSize: 250,
+        shipYPosition: 0.85
+    },
+    mobile: {
+        shipWidth: 40,
+        shipHeight: 24,
+        baseSpeed: 150,
+        shipMoveSpeed: 400,
+        obstacleMinSize: 60,
+        obstacleMaxSize: 150,
+        shipYPosition: 0.7
+    }
+};
+
+const SCREEN_SETTINGS = {
+    desktop: {
+        BASE_WIDTH: 1920,
+        BASE_HEIGHT: 1080,
+        ship: {
+            width: 80,
+            height: 48,
+            yPosition: 0.85,
+            moveSpeed: 600
+        },
+        game: {
+            baseSpeed: 300,
+            obstacleMin: 100,
+            obstacleMax: 250
+        }
+    },
+    mobile: {
+        BASE_WIDTH: 640,
+        BASE_HEIGHT: 960,
+        ship: {
+            width: 40,
+            height: 24,
+            yPosition: 0.7,
+            moveSpeed: 400
+        },
+        game: {
+            baseSpeed: 150,
+            obstacleMin: 60,
+            obstacleMax: 150
+        }
+    }
+};
+
+function calculateScale() {
+    const isMobile = window.innerWidth <= 768;
+    const settings = isMobile ? SCREEN_SETTINGS.mobile : SCREEN_SETTINGS.desktop;
+    
+    // Calculate both width and height scales
+    const widthScale = window.innerWidth / settings.BASE_WIDTH;
+    const heightScale = window.innerHeight / settings.BASE_HEIGHT;
+    
+    // Use the smaller scale to maintain aspect ratio
+    return Math.min(widthScale, heightScale);
+}
+
 function resizeCanvas() {
+    const isMobile = window.innerWidth <= 768;
+    const settings = isMobile ? SCREEN_SETTINGS.mobile : SCREEN_SETTINGS.desktop;
+    const newScale = calculateScale();
+    
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     
-    // Oblicz skalę na podstawie wymiarów ekranu
-    const widthScale = canvas.width / BASE_WIDTH;
-    const heightScale = canvas.height / BASE_HEIGHT;
-    screenScale = Math.min(widthScale, heightScale);
+    // Update game dimensions
+    shipWidth = settings.ship.width * newScale;
+    shipHeight = settings.ship.height * newScale;
+    shipMoveSpeed = settings.ship.moveSpeed * newScale;
+    gameSpeed = settings.game.baseSpeed * newScale;
     
-    // Dostosuj wymiary statku i przeszkód
-    shipWidth = 60 * screenScale;
-    shipHeight = 36 * screenScale;
+    // Ensure minimum sizes
+    shipWidth = Math.max(shipWidth, isMobile ? 30 : 60);
+    shipHeight = Math.max(shipHeight, isMobile ? 18 : 36);
     
-    // Ustaw początkową pozycję statku
-    shipX = canvas.width / 2;
+    // Update ship position
+    shipX = Math.max(shipWidth, Math.min(canvas.width - shipWidth, canvas.width / 2));
+    shipY = canvas.height * settings.ship.yPosition;
     targetX = shipX;
     
-    // Dostosuj prędkości
-    baseSpeed = 200 * screenScale;
-    shipMoveSpeed = 500 * screenScale;
-    speedIncreasePerLevel = 50 * screenScale;
+    // Update obstacle sizes
+    const minObstacleSize = settings.game.obstacleMin * newScale;
+    const maxObstacleSize = settings.game.obstacleMax * newScale;
     
-    // Zaktualizuj style UI
-    updateUIStyles();
+    // Update UI scale
+    updateUIScale(newScale);
 }
 
-// Dodaj funkcję do aktualizacji stylów UI
-function updateUIStyles() {
-    ctx.font = `${20 * screenScale}px Arial`;
-    // Dostosuj inne elementy UI
-    const fontSize = Math.max(16, Math.floor(20 * screenScale));
-    document.documentElement.style.setProperty('--game-font-size', `${fontSize}px`);
+function updateUIScale(scale) {
+    const isMobile = window.innerWidth <= 768;
+    const baseFontSize = isMobile ? 16 : 24;
+    const scaledFontSize = Math.max(baseFontSize * scale, isMobile ? 12 : 18);
+    
+    ctx.font = `${scaledFontSize}px Arial`;
+    ctx.textBaseline = 'top';
 }
+
+// Throttled resize handler to prevent performance issues
+let resizeTimeout;
+window.addEventListener('resize', () => {
+    if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+    }
+    resizeTimeout = setTimeout(() => {
+        resizeCanvas();
+    }, 100);
+});
+
+// Initialize controls based on device
+function initControls() {
+    // Keyboard controls for desktop
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    
+    // Touch controls for mobile
+    if ('ontouchstart' in window) {
+        canvas.addEventListener('touchstart', handleTouch);
+        canvas.addEventListener('touchmove', handleTouch);
+        
+        // Prevent default touch behaviors
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    }
+}
+
+// Update game initialization
+window.addEventListener('load', () => {
+    resizeCanvas();
+    initControls();
+    window.addEventListener('resize', resizeCanvas);
+});
 
 // Wywołujemy funkcję dostosowania przy starcie
 window.addEventListener('load', () => {
     preloadImages();
     resizeCanvas();
+    initTouchControls();
+    
+    // Prevent default touch behaviors
+    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 });
 
 // Nasłuchiwanie na zmianę rozmiaru okna
@@ -183,6 +315,19 @@ canvas.addEventListener('touchmove', function(e) {
     const touch = e.touches[0];
     targetX = touch.clientX;
 }, { passive: false });
+
+// Add touch controls
+function initTouchControls() {
+    canvas.addEventListener('touchstart', handleTouch);
+    canvas.addEventListener('touchmove', handleTouch);
+    
+    function handleTouch(e) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const centerX = canvas.width / 2;
+        targetX = shipX + (touch.clientX > centerX ? 1 : -1) * shipMoveSpeed * deltaTime;
+    }
+}
 
 // Aktualizacja pozycji statku
 function updateShipPosition() {
@@ -995,7 +1140,7 @@ function gameLoop(currentTime) {
     if (lastTime === 0) {
         lastTime = currentTime;
     }
-    deltaTime = (currentTime - lastTime) / 1000; // Konwersja na sekundy
+    deltaTime = Math.min((currentTime - lastTime) / 1000, 0.1); // Cap delta time
     lastTime = currentTime;
     
     // Ograniczenie deltaTime dla przypadków gdy karta jest nieaktywna

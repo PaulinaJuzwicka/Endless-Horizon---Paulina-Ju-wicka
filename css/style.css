@@ -1,5 +1,6 @@
 :root {
     --game-font-size: 16px;
+    --base-unit: 1vh;
 }
 
 body {
@@ -11,6 +12,9 @@ body {
     height: 100vh;
     background-color: #000;
     color: #fff;
+    overflow: hidden;
+    touch-action: none;
+    font-family: Arial, sans-serif;
 }
 
 #menu {
@@ -19,23 +23,36 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
-    background-color: rgba(0, 0, 0, 0.7); /* Przezroczyste tło */
-    padding: 20px;
-    border-radius: 10px; /* Zaokrąglone rogi */
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.5); /* Cień */
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: min(40px, 5vw);
+    border-radius: 15px;
+    width: clamp(280px, 90%, 600px);
 }
 
 #menu h1 {
-    font-size: calc(var(--game-font-size) * 2);
-    margin-bottom: 2rem;
+    color: #4080ff;
+    font-size: clamp(24px, 5vw, 36px);
+    margin-bottom: clamp(20px, 3vw, 30px);
+    text-shadow: 0 0 10px rgba(64, 128, 255, 0.5);
 }
 
 #menu button {
-    font-size: var(--game-font-size);
-    padding: 1rem 2rem;
-    margin: 0.5rem;
-    min-width: 200px;
+    width: clamp(200px, 80%, 400px);
+    padding: clamp(10px, 2vw, 15px) clamp(20px, 4vw, 30px);
+    font-size: clamp(16px, 2.5vw, 18px);
+    margin: clamp(10px, 2vw, 15px) auto;
+    background-color: #4080ff;
+    color: white;
+    border: none;
+    border-radius: calc(var(--base-unit) * 0.5);
     cursor: pointer;
+    display: block;
+    transition: all 0.3s ease;
+}
+
+#menu button:hover {
+    background-color: #5090ff;
+    transform: scale(1.05);
 }
 
 button {
@@ -55,9 +72,48 @@ button:hover {
 }
 
 @media (max-width: 768px) {
+    :root {
+        --base-unit: 1.2vh;
+    }
+    
     #menu button {
-        min-width: 150px;
-        padding: 0.8rem 1.5rem;
+        width: 80%;
+        margin: calc(var(--base-unit) * 1.5) auto;
+        display: block;
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+
+    #menu {
+        min-width: 80%;
+        padding: min(20px, 4vw);
+    }
+
+    #menu h1 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+    #menu h1 {
+        font-size: calc(var(--base-unit) * 3);
+        margin-bottom: calc(var(--base-unit) * 2);
+        font-size: 20px;
+        margin-bottom: 10px;
+    }
+    
+    #menu button {
+        padding: calc(var(--base-unit) * 1) calc(var(--base-unit) * 2);
+        margin: calc(var(--base-unit) * 0.5);
+        display: inline-block;
+        width: auto;
+        padding: 8px 16px;
+        margin: 5px;
+    }
+
+    #menu {
+        padding: 15px;
     }
 }
 
